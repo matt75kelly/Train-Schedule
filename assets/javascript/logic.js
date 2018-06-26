@@ -13,6 +13,8 @@ var config = {
   var arrivalTimes = [];
   var remainingMins = [];
   
+  var intervalId;
+
   var userData = {
     nameTrain: "",
     destination: "",
@@ -35,62 +37,61 @@ var config = {
   }
 
   function diffDate (stampDate, stampTime){
-    var n = "|";
     var year = stampDate.slice(-4);
-    var month = stampDate.slice(0,2);
-    var day = stampDate.slice(3,5);
+    var month = stampDate.slice(0,3);
+    var day = stampDate.slice(4,6);
     var hour = stampTime.slice(0,2);
     var minutes = stampTime.slice(3,5);
-    var halfDay = stampTime.slice(-2);
 
-    if (halfDay === "PM") hour += 12;
-    var currentDate = moment().format("L");
+    var currentDate = moment().format("ll");
     var currentTime = moment().format('HH:mm');
     var index = currentTime.indexOf(":");
 
     var currYear = currentDate.slice(-4);
-    var currMonth = currentDate.slice(0,2);
-    var currDay = currentDate.slice(3,5);
+    var currMonth = currentDate.slice(0,3);
+    var currDay = currentDate.slice(4,6);
     var currHour = currentTime.slice(0, index);
     var currMin = currentTime.slice(index + 1, index + 3);
     
-    var diffYear = (currYear - year);
-    var diffMonth = (currMonth - month);
-    var diffDay = (currDay - day);
-    var diffHour = (currHour - hour);
-    var diffMin = (currMin- minutes);
+    var stampCount = dateCrunch(year, month, day) + (parseInt(hour) * 60) + parseInt(minutes);
+    var currentCount = dateCrunch (currYear, currMonth, currDay) + (parseInt(currHour) * 60) + parseInt(currMin);
 
-    if(diffMin < 0) {
-      diffHour--;
-      diffMin = 60 + diffMin;
-    }
-    if (diffHour < 0){
-      diffDay--;
-      diffHour = 24 + diffHour;
-      if(diffHour > 12) {
-        diffHour -= 12;
-      }
-    }
-    if (diffDay < 0){
-      temp = diffMonth;
-      diffMonth--;
-      if(temp == 4 || temp == 6 || temp == 9 || temp == 11){
-        diffDay = 30 + diffDay;
-      }
-      else if (temp == 2){
-        diffDay = 28 + diffDay;
-      }
-      else {
-        diffDay = 31 + diffDay;
-      }
-    }
-    if (diffMonth < 0){
-      diffYear--;
-      diffMonth = 12 + diffMonth;
-      if(diffMonth < 10) diffMonth = "0" + diffMonth;
-    }
-    var result = (diffYear * 525600) + (diffMonth * 43800) + (diffDay * 1440) + (diffHour * 60) + diffMin;
+    var result = currentCount - stampCount;
     return result;
+  }
+
+  function dateCrunch( year, month, day){
+    var totalMin = 0;
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    switch (month){
+      case  months[0]:
+        totalMin = 0;
+      case  months[1]:
+        totalMin = 44640;
+      case  months[2]:
+        totalMin = 84960;
+      case  months[3]:
+        totalMin = 129620;
+      case  months[4]:
+        totalMin = 172800;
+      case  months[5]:
+        totalMin = 217440;
+      case  months[6]:
+        totalMin = 260640;
+      case  months[7]:
+        totalMin = 305280;
+      case  months[8]:
+        totalMin = 349920;
+      case  months[9]:
+        totalMin = 393120;
+      case  months[10]:
+        totalMin = 437760;
+      case  months[11]:
+        totalMin = 480960;
+    }
+    totalMin += (parseInt(year) * 525600) + (Math.floor(parseInt(year)/4)*1440) + (parseInt(day) * 1440);
+  
+    return totalMin;
   }
   function arrivingNext(stampDate, startTime, frequency){
     var arrival = "";
@@ -102,10 +103,13 @@ var config = {
     arrMin += remaining;
     if( arrMin >= 60){
       arrHour++;
-      arrMin = 60 - arrMin;
+      arrMin -= 60;
+    }
+    if(arrMin < 10){
+      arrMin = "0" + arrMin;
     }
     if( arrHour >= 24){
-      arrHour = 24 - arrHour;
+      arrHour -= 24;
     }
     var arrNext = ` ` + arrHour + ":" + arrMin;
     arrival = convertTime(arrNext);
@@ -130,54 +134,93 @@ var config = {
       dayHalf = " PM";
     }
     else dayHalf = " AM";
+    if (hours === 0){
+      hours = 12;
+    }
     newTime = hours + minutes + dayHalf;
     return newTime;
   }
-  // Main Program and Event Handlers
 
+  function validTime(time){
+    var currentTime = moment().format("HH:mm");
+    var index = time.indexOf(":");
+    var currIndex = time.indexOf(":");
+    var hour = parseInt(time.slice(0, index));
+    var min = parseInt(time.slice(index + 1, time.length));
+    var currHour = parseInt(currentTime.slice(0, currIndex));
+    var currMin = parseInt(currentTime.slice(currIndex + 1, time.length));
+    if(hour > currHour) return false;
+    else if (hour == currHour){
+      if(min > currMin) return false;
+    }
+    return true;
+  }
+
+  function updateTimes(){
+    for( var i = 0; i < arrivalTimes.length; i++){
+      var arrival = $("#arrival-" + i);
+      var remaining = $("#remaining-" + i);
+      var dateEntered = arrival.attr("data-entered");
+      var startTime = arrival.attr("data-start");
+      var frequency = arrival.attr("data-freq");
+
+      remainingMins[i] = remainingTime(dateEntered, startTime, frequency);
+      remaining.text(remainingMins[i] + " Minutes");
+
+      arrivalTimes[i] = arrivingNext(dateEntered, startTime, frequency);
+      arrival.text(arrivalTimes[i]);
+    }
+    console.log("Interval Expired");
+  }
+  // Main Program and Event Handlers
+  clearInterval(intervalId);
+  intervalId = setInterval(updateTimes, 60000);
 
   $(document).on("click", ".submit", function(event){
     event.preventDefault();
 
     userData.nameTrain = $("#userTrainName").val().trim();
     userData.destination = $("#userDestination").val().trim();
-    userData.startTime = $("#userStartTime").val().trim();
     userData.frequency = $("#userFrequency").val().trim();
-    userData.dateEntered = moment().format("L");
+    userData.dateEntered = moment().format("ll");
+    
+    var temp = $("#userStartTime").val().trim();
+    if (validTime(temp)) userData.startTime = temp;
+    else userData.startTime = moment().format("HH:mm");
+
     database.ref().push(userData);
   });
 
   database.ref().on("child_added", function(childSnapshot){
     var data = childSnapshot.val();
+    var duration = data.frequency;
+    var newEntry = $("<tr>");
+    var name = $("<th>");
+    var dest = $("<td>");
+    var freq = $("<td>");
+    var arrival = $("<td>");
+    arrival.attr("id", "arrival-" + arrivalTimes.length);
+    arrival.attr("data-entered", data.dateEntered);
+    arrival.attr("data-start", data.startTime);
+    arrival.attr("data-freq", duration);
+    var remaining = $("<td>");
+    remaining.attr("id", "remaining-" + remainingMins.length);
+    name.text(data.nameTrain);
+    dest.text(data.destination);
+    freq.text(duration);
+    
+    remainingMins.push(remainingTime(data.dateEntered, data.startTime,duration));
+    remaining.text(remainingMins[remainingMins.length - 1] + " Minutes");
 
-      var newEntry = $("<tr>");
-      var name = $("<th>");
-      var dest = $("<td>");
-      var freq = $("<td>");
-      var arrival = $("<td>");
-      var remaining = $("<td>");
-      var duration = data.frequency;
-      var currentTime = moment().format('HH:mm');
+    arrivalTimes.push(arrivingNext(data.dateEntered, data.startTime, duration));
+    arrival.text(arrivalTimes[arrivalTimes.length -1]);
+    
+    newEntry.append(name);
+    newEntry.append(dest);
+    newEntry.append(freq);
+    newEntry.append(arrival);
+    newEntry.append(remaining);
 
-      console.log ("Current: " + currentTime);
-
-      diffDate(data.dateEntered, data.startTime);
-      name.text(data.nameTrain);
-      dest.text(data.destination);
-      freq.text(duration);
-      
-      remainingMins.push(remainingTime(data.dateEntered, data.startTime,duration));
-      remaining.text(remainingMins[remainingMins.length - 1]);
-
-      arrivalTimes.push(arrivingNext(data.dateEntered, data.startTime, duration));
-      arrival.text(arrivalTimes[arrivalTimes.length -1]);
-      
-      newEntry.append(name);
-      newEntry.append(dest);
-      newEntry.append(freq);
-      newEntry.append(arrival);
-      newEntry.append(remaining);
-
-      $("tbody").append(newEntry);
+    $("tbody").append(newEntry);
     
   });
