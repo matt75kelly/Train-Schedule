@@ -213,9 +213,7 @@ var config = {
     $("#userTrainName").val("");
     $("#userDestination").val("");
     $("#userFrequency").val("");
-    $("#userStartTime").val("");
-
-    
+    $("#userStartTime").val(""); 
   });
 
   database.ref().on("child_added", function(childSnapshot){
