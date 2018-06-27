@@ -202,7 +202,7 @@ var config = {
     if(validFreq(testFreq) && validStartTime(testTime)){
       userData.nameTrain = $("#userTrainName").val().trim();
       userData.destination = $("#userDestination").val().trim();
-      userData.frequency = Math.floor($("#userFrequency").val().trim());
+      userData.frequency = Math.floor(parseInt(testFreq));
       userData.dateEntered = moment().format("ll");
       userData.startTime = moment().format("HH:mm");
       database.ref().push(userData);
