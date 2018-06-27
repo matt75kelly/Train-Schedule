@@ -205,6 +205,7 @@ var config = {
       userData.frequency = $("#userFrequency").val().trim();
       userData.dateEntered = moment().format("ll");
       userData.startTime = moment().format("HH:mm");
+      database.ref().push(userData);
     }
     else{
       confirm("Input Invalid, Please Enter Valid Values");
@@ -214,7 +215,7 @@ var config = {
     $("#userFrequency").val("");
     $("#userStartTime").val("");
 
-    database.ref().push(userData);
+    
   });
 
   database.ref().on("child_added", function(childSnapshot){
