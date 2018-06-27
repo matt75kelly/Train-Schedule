@@ -18,9 +18,9 @@ var config = {
   var userData = {
     nameTrain: "",
     destination: "",
-    frequency: 0,
-    startTime: "00:00 AM",
-    dateEntered: "01/01/2000",
+    frequency: "",
+    startTime: "",
+    dateEntered: "",
   }
 
   function updateTimes(){
