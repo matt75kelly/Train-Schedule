@@ -102,8 +102,8 @@ var config = {
 
     arrMin += remaining;
     if( arrMin >= 60){
-      arrHour++;
-      arrMin -= 60;
+      arrHour += Math.floor(arrMin / 60);
+      arrMin = arrMin % 60;
     }
     if(arrMin < 10){
       arrMin = "0" + arrMin;
@@ -165,7 +165,15 @@ var config = {
       var frequency = arrival.attr("data-freq");
 
       remainingMins[i] = remainingTime(dateEntered, startTime, frequency);
-      remaining.text(remainingMins[i] + " Minutes");
+      var remTime = remainingMins[i];
+      var remHours = Math.floor(remTime / 60);
+      var remMins = remTime % 60;
+      if (remHours >= 1) {
+        remaining.text(remHours + " Hours & " + remMins + " Minutes");
+      }
+      else if (remHours < 1) {
+        remaining.text(remMins + " Minutes");
+      }
 
       arrivalTimes[i] = arrivingNext(dateEntered, startTime, frequency);
       arrival.text(arrivalTimes[i]);
@@ -187,6 +195,11 @@ var config = {
     var temp = $("#userStartTime").val().trim();
     if (validTime(temp)) userData.startTime = temp;
     else userData.startTime = moment().format("HH:mm");
+
+    $("#userTrainName").val("");
+    $("#userDestination").val("");
+    $("#userFrequency").val("");
+    $("#userStartTime").val("");
 
     database.ref().push(userData);
   });
@@ -210,7 +223,15 @@ var config = {
     freq.text(duration);
     
     remainingMins.push(remainingTime(data.dateEntered, data.startTime,duration));
-    remaining.text(remainingMins[remainingMins.length - 1] + " Minutes");
+    var remTime = remainingMins[remainingMins.length - 1];
+      var remHours = Math.floor(remTime / 60);
+      var remMins = remTime % 60;
+      if (remHours >= 1) {
+        remaining.text(remHours + " Hours & " + remMins + " Minutes");
+      }
+      else {
+        remaining.text(remMins + " Minutes");
+      }
 
     arrivalTimes.push(arrivingNext(data.dateEntered, data.startTime, duration));
     arrival.text(arrivalTimes[arrivalTimes.length -1]);
