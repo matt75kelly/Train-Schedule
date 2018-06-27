@@ -109,7 +109,7 @@ var config = {
       arrMin = "0" + arrMin;
     }
     if( arrHour >= 24){
-      arrHour -= 24;
+      arrHour = arrHour % 24;
     }
     var arrNext = ` ` + arrHour + ":" + arrMin;
     arrival = convertTime(arrNext);
@@ -141,21 +141,30 @@ var config = {
     return newTime;
   }
 
-  function validTime(time){
-    var currentTime = moment().format("HH:mm");
-    var index = time.indexOf(":");
-    var currIndex = time.indexOf(":");
-    var hour = parseInt(time.slice(0, index));
-    var min = parseInt(time.slice(index + 1, time.length));
-    var currHour = parseInt(currentTime.slice(0, currIndex));
-    var currMin = parseInt(currentTime.slice(currIndex + 1, time.length));
-    if(hour > currHour) return false;
-    else if (hour == currHour){
-      if(min > currMin) return false;
+  function validFreq(value){
+    console.log(Number(value));
+    var valid = true;
+    if (value <= 0) {
+      valid = false;
     }
-    return true;
+    if (!Number(value)){
+      valid = false;
+    }
+    return valid;
   }
+  function validStartTime (time){
+    console.log(time);
+    var valid = true;
+    var index = time.indexOf(":");
+    var hours = time.slice(0, index);
+    var mins = time.slice(index + 1, index + 3);
+    if (hours == "") valid = false;
+    if (mins == "") valid = false;
+    if (parseInt(hours) < 0) valid = false;
+    if (parseInt(mins) < 0) valid = false;
 
+    return valid;
+  }
   function updateTimes(){
     for( var i = 0; i < arrivalTimes.length; i++){
       var arrival = $("#arrival-" + i);
@@ -187,15 +196,19 @@ var config = {
   $(document).on("click", ".submit", function(event){
     event.preventDefault();
 
-    userData.nameTrain = $("#userTrainName").val().trim();
-    userData.destination = $("#userDestination").val().trim();
-    userData.frequency = $("#userFrequency").val().trim();
-    userData.dateEntered = moment().format("ll");
-    
-    var temp = $("#userStartTime").val().trim();
-    if (validTime(temp)) userData.startTime = temp;
-    else userData.startTime = moment().format("HH:mm");
+    var testTime = $("#userStartTime").val().trim();
+    var testFreq = $("#userFrequency").val().trim();
 
+    if(validFreq(testFreq) && validStartTime(testTime)){
+      userData.nameTrain = $("#userTrainName").val().trim();
+      userData.destination = $("#userDestination").val().trim();
+      userData.frequency = $("#userFrequency").val().trim();
+      userData.dateEntered = moment().format("ll");
+      userData.startTime = moment().format("HH:mm");
+    }
+    else{
+      confirm("Input Invalid, Please Enter Valid Values");
+    }
     $("#userTrainName").val("");
     $("#userDestination").val("");
     $("#userFrequency").val("");
